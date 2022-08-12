@@ -38,6 +38,20 @@ module modDateTime
    character(len=*), parameter :: sourceName = 'modDateTime.F90' ! Nome do arquivo fonte
    character(len=*), parameter :: moduleName = 'modDateTime' ! Nome do módulo
    integer, parameter, dimension(12) :: daysByMonth = (/31,28,31,30,31,30,31,31,30,31,30,31/)
+   character(len=3), parameter, dimension(24) :: shortMonthName = (/'jan','feb','mar','apr','may','jun' &
+                                                                   ,'jul','aug','sep','oct','nov','dec' &
+                                                                   ,'jan','fev','mar','abr','mai','jun' &
+                                                                   ,'jul','ago','set','out','nov','dez' &
+                                                                   /)
+   character(len=9), parameter, dimension(24) ::  longMonthName = (/'january  ','february ','march    ' &
+                                                                   ,'april    ','may      ','june     ' &
+                                                                   ,'july     ','august   ','september' &
+                                                                   ,'october  ','november ','december ' &
+                                                                   ,'janeiro  ','fevereiro','marco    ' &
+                                                                   ,'abril    ','maio     ','junho    ' &
+                                                                   ,'julho    ','agosto   ','setembro ' &
+                                                                   ,'outubro  ','novembro ','dezembro ' &
+                                                                   /)
 
    type t_dt 
       integer :: year
@@ -54,9 +68,71 @@ module modDateTime
    !! Tipo de data/tempo
 
    private
-   public :: t_dt, now, date2String, int2DateTime
+   public :: t_dt, now, date2String, int2DateTime, date2Seconds, string2DateTime, monthName
+   public :: dayExist, isLeapYear
 
 contains
+
+   function monthName(monthIn,size,lang) result(month)
+      !! Retorna o nome do mês
+      !!
+      !! @note
+      !!
+      !! **Project**: fortran-utilities
+      !! **Author(s)**: Rodrigues, L.F. [LFR]
+      !! **e-mail**: <mailto:luiz.rodrigues@inpe.br>
+      !! **Date**:  12Agosto2022 17:43
+      !!
+      !! **Full description**:
+      !! Retorna o nome do mês
+      !!
+      !! @endnote
+      !!
+      !! @warning
+      !!
+      !!  [](https://www.gnu.org/graphics/gplv3-127x51.png'')
+      !!
+      !!     Under the terms of the GNU General Public version 3
+      !!
+      !! @endwarning
+   
+      implicit none
+      !Parameters:
+      character(len=*), parameter :: procedureName = 'monthName' ! Nome da função
+   
+      !Variables (input):
+      integer, intent(in) :: monthIn
+      !! Número do mês
+      character, intent(in), optional :: size 
+      !! tamanho do caracter (L/l ou S/s)
+      character(len=2), intent(in), optional :: lang
+      !! Idioma (en ou pt, EN ou PT)
+   
+      !Local variables:
+      character(len=9) :: month
+      !! Month name to return
+      logical :: islong
+      integer :: langInc
+   
+      !Code:
+      if(monthIn<1 .or. monthIn>12) iErrNumber = dumpMessage(c_tty,c_yes,"","",c_fatal &
+      ," month invalid: ",monthIn,"I8")
+      islong = .false.
+      langInc = 0
+      if(present(size)) then
+         if(size == 'L' .or. size == 'l') islong = .true.
+      endif
+      if(present(lang)) then
+         if(lang == 'pt' .or. lang == 'PT') langInc=12
+      end if
+      
+      if(islong) then
+         month = longMonthName(monthIn+langInc)
+      else 
+         month = shortMonthName(monthIn+langInc)
+      endif
+   
+   end function monthName
 
    function now() result(dateNow)
       !! Retorna a data e hora do sistema no tipo dt
@@ -121,6 +197,7 @@ contains
       !!
       !! **Full description**:
       !! Retorna um string  de tempo ISO 8601
+      !! 
       !! https://www.iso.org/iso-8601-date-and-time-format.html
       !!
       !! @endnote
@@ -165,6 +242,81 @@ contains
       write (date2String, isofmt) dti(1), dti(2), dti(3), dti(5), dti(6), &
                                    dti(7), dti(8), zone(1:3), zone(4:5)
   end function date2String
+
+  function string2DateTime(dateIn) result(dtOut)
+     !! Convert a string ISO 8601 to dateTime
+     !!
+     !! @note
+     !!
+     !! **Project**: fortran-utilities
+     !! **Author(s)**: Rodrigues, L.F. [LFR]
+     !! **e-mail**: <mailto:luiz.rodrigues@inpe.br>
+     !! **Date**:  12Agosto2022 16:43
+     !!
+     !! **Full description**:
+     !! Convert a string ISO 8601 to dateTime
+     !! The input format is AAAA-MM-DDTHH:MM:SS.mmmStt:00
+     !!                     
+     !!
+     !! @endnote
+     !!
+     !! @warning
+     !!
+     !!  [](https://www.gnu.org/graphics/gplv3-127x51.png'')
+     !!
+     !!     Under the terms of the GNU General Public version 3
+     !!
+     !! @endwarning
+  
+     implicit none
+     !Parameters:
+     character(len=*), parameter :: procedureName = 'string2DateTime' ! Nome da função
+  
+     !Variables (input):
+      character(len=*), intent(in) :: dateIn
+  
+     !Local variables:
+     type(t_dt) :: dtOut
+     !! Output in datetime type
+     integer :: lenOfDate
+     integer :: year
+     integer :: month 
+     integer :: day
+     integer :: hour
+     integer :: minute
+     integer :: second
+     integer :: milisecond
+     character(len=5) :: zone
+  
+     !Code:
+     dtOut%year = 0
+     dtOut%month = 0
+     dtOut%day = 0
+     dtOut%hour = 0
+     dtOut%minute = 0
+     dtOut%second = 0
+     dtOut%milisecond = 0
+     dtOut%timeZOne = 0
+     dtOut%zone = "+0000"
+
+
+     lenOfDate = len(dateIn)
+     if(lenOfDate>3) read(dateIn(1:4), "(i4)") dtOut%year
+     if(lenOfDate>6) read(dateIn(6:7), "(i2)") dtOut%month
+     if(lenOfDate>9) read(dateIn(9:10), "(i2)") dtOut%day
+     if(lenOfDate>12) read(dateIn(12:13), "(i2)") dtOut%hour
+     if(lenOfDate>15) read(dateIn(15:16), "(i2)") dtOut%minute
+     if(lenOfDate>18) read(dateIn(18:19), "(i2)") dtOut%second
+     if(lenOfDate>22) read(dateIn(21:23), "(i3)") dtOut%milisecond
+     if(lenOfDate>25) then
+         read(dateIn(24:26), "(A3)") dtOut%zone
+         dtOut%zone = trim(dtOut%zone)//'00'   
+         read(dateIn(24:26),"(i3)") dtOut%timezone
+     endif
+
+     dtOut%julDay = julday(dtOut)
+  
+  end function string2DateTime
 
   !=============================================================================================
   integer function julday(dtin)
@@ -357,16 +509,18 @@ function dayExist(dtIn) result(dExist)
 
    dExist = .false.
    if(dtIn%Month<1 .and. dtIn%Month>12) return
-   if(dtIn%day<1) return
+   if(dtIn%day<1 .or. dtIn%hour<0 .or. dtIn%minute<0 .or. dtIn%second<0 .or. dtIn%milisecond<0) return
+   if(dtIn%hour>23 .or. dtIn%minute>59 .or. dtIn%second>59 .or. dtIn%milisecond>999) return
    if(dtIn%month == 2 .and. isLeapYear(dtIn%year) .and. dtIn%day>29) return
    if(dtIn%month == 2 .and. .not. isLeapYear(dtIn%year) .and. dtIn%day>28) return
    if(dtIn%day>daysByMonth(dtIn%month)) return
+
    dExist = .true.
 
 end function dayExist
 
 function isLeapYear(year) result(isLY)
-   !! Testa se um ano é bissexto
+   !! Retorna .true. se um ano é bissexto 
    !!
    !! @note
    !!
@@ -405,5 +559,62 @@ function isLeapYear(year) result(isLY)
 	endif
 
 end function isLeapYear
+
+function date2Seconds(dtIn,baseYear) result(seconds)
+   !! Retorna a data em segundos desde baseYear as 0h
+   !!
+   !! @note
+   !!
+   !! **Project**: fortran-itilities
+   !! **Author(s)**: Rodrigues, L.F. [LFR]
+   !! **e-mail**: <mailto:luiz.rodrigues@inpe.br>
+   !! **Date**:  12Agosto2022 08:11
+   !!
+   !! **Full description**:
+   !! Retorna a data em segundos desde baseYear as 0h
+   !! Se baseYear não for fornecido usa-se o ano de 1900
+   !!
+   !! @endnote
+   !!
+   !! @warning
+   !!
+   !!  [](https://www.gnu.org/graphics/gplv3-127x51.png'')
+   !!
+   !!     Under the terms of the GNU General Public version 3
+   !!
+   !! @endwarning
+
+   implicit none
+   !Parameters:
+   character(len=*), parameter :: procedureName = 'date2Seconds' ! Nome da função
+
+   !Variables (input):
+   type(t_dt) :: dtIn
+   !! Data a ser convertida
+   integer,intent(in),optional :: baseYear
+   
+
+   !Local variables:
+   integer(kind=kind_ib) :: seconds
+   !! Número de segundos para a data
+   integer :: nDays
+   integer :: year
+
+   !Code:
+   year = 1900
+   if(present(baseYear)) year = baseYear
+
+   if (.not. dayExist(dtIn)) iErrNumber=dumpMessage(c_tty,c_yes,"","",c_fatal &
+                ," input date Invalid :"//date2String(dtIn))
+   if(dtIn%year<year) iErrNumber=dumpMessage(c_tty,c_yes,"","",c_fatal &
+                ," Year must be greater or equal baseYear :"//date2String(dtIn))
+
+   nDays   = (dtIn%year - year)*365 + max(0,((dtIn%year - year)-1)/4)+ julday(dtIn)
+   seconds = dble(nDays)*86400. &
+             +dble(dtIn%hour)*3600. &
+             +dble(dtIn%minute)*60. &
+             +dble(dtIn%second)
+
+end function date2Seconds
 
 end module modDateTime
