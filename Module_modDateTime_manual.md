@@ -1,4 +1,8 @@
-# Module modDateTime
+# Manual do Módulo modDateTime
+
+## Introdução:
+
+Esse manual descreve tipos e funções pertencentes ao módulo modDateTime que agrupa funções específicas para uso em programas fortran. Faz parte de um esforço para manter bibliotecas importantes e agrupadas para uso em programação Fortran.
 
 ## Tipos:
 
