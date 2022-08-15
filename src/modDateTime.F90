@@ -52,6 +52,16 @@ module modDateTime
                                                                    ,'julho    ','agosto   ','setembro ' &
                                                                    ,'outubro  ','novembro ','dezembro ' &
                                                                    /)
+   character(len=3), parameter, dimension(14) :: shortWeekName     = (/'sun','mon','tue','wed','thu','fri' &
+                                                                   ,'sat','dom','seg','ter','qua','qui' &
+                                                                   ,'sex','sab' &
+                                                                   /)
+   character(len=13), parameter, dimension(14) :: longWeekName = (/ 'sunday       ','monday       ','tuesday      ' &
+                                                                   ,'wednesday    ','thursday     ','friday       ' &
+                                                                   ,'saturday     ','domingo      ','segunda-feira' &
+                                                                   ,'terca-feira  ','quarta-feira ','quinta-feira ' &
+                                                                   ,'sexta-feira  ','sabado       ' &
+                                                                   /)
 
    type t_dt 
       integer :: year
@@ -69,9 +79,73 @@ module modDateTime
 
    private
    public :: t_dt, now, date2String, int2DateTime, date2Seconds, string2DateTime, monthName
-   public :: dayExist, isLeapYear
+   public :: dayExist, isLeapYear, seconds2DateTime, incDateTime, weekName, dayOfWeek
 
 contains
+
+   function weekName(nWDay,size,lang) result(wName)
+      !! Retorna o nome do dia da semana
+      !!
+      !! @note
+      !!
+      !! **Project**: fortran-utilities
+      !! **Author(s)**: Rodrigues, L.F. [LFR]
+      !! **e-mail**: <mailto:luiz.rodrigues@inpe.br>
+      !! **Date**:  15Agosto2022 13:37
+      !!
+      !! **Full description**:
+      !! Retorna o nome do dia da semana
+      !!
+      !! @endnote
+      !!
+      !! @warning
+      !!
+      !!  [](https://www.gnu.org/graphics/gplv3-127x51.png'')
+      !!
+      !!     Under the terms of the GNU General Public version 3
+      !!
+      !! @endwarning
+   
+      implicit none
+      !Parameters:
+      character(len=*), parameter :: procedureName = 'weekName' ! Nome da função
+   
+      !Variables (input):
+      integer, intent(in) :: nWDay
+      !! Número do dia da semana. Domingo é 1
+      character, intent(in), optional :: size 
+      !! tamanho do caracter (L/l ou S/s)
+      character(len=2), intent(in), optional :: lang
+      !! Idioma (en ou pt, EN ou PT)
+      
+   
+      !Local variables:
+      character(len=13) :: wName
+      !! Nome do dia da semana
+      logical :: islong
+      integer :: langInc
+   
+      !Code:
+      if(nWDay<1 .or. nWDay>7) iErrNumber = dumpMessage(c_tty,c_yes,"","",c_fatal &
+      ," day of week invalid: ",nWDay,"I8")
+      
+      islong = .false.
+      langInc = 0
+      if(present(size)) then
+         if(size == 'L' .or. size == 'l') islong = .true.
+      endif
+      if(present(lang)) then
+         if(lang == 'pt' .or. lang == 'PT') langInc=7
+      end if
+
+      if(islong) then
+         wName = longWeekName(nWDay+langInc)
+      else 
+         wName = shortWeekName(nWday+langInc)
+      endif
+
+
+   end function weekName
 
    function monthName(monthIn,size,lang) result(month)
       !! Retorna o nome do mês
@@ -595,7 +669,7 @@ function date2Seconds(dtIn,baseYear) result(seconds)
    
 
    !Local variables:
-   integer(kind=kind_ib) :: seconds
+   real(kind=kind_rb) :: seconds
    !! Número de segundos para a data
    integer :: nDays
    integer :: year
@@ -613,8 +687,221 @@ function date2Seconds(dtIn,baseYear) result(seconds)
    seconds = dble(nDays)*86400. &
              +dble(dtIn%hour)*3600. &
              +dble(dtIn%minute)*60. &
-             +dble(dtIn%second)
+             +dble(dtIn%second) &
+             +dble(dtIn%milisecond)/1000.
 
 end function date2Seconds
+
+
+function seconds2DateTime(seconds) result(dtOut)
+   !! Convert hours/minutes/seconds since from 1900 to dateTime
+   !!
+   !! @note
+   !!
+   !! **Project**: fortran-utilities
+   !! **Author(s)**: Rodrigues, L.F. [LFR]
+   !! **e-mail**: <mailto:luiz.rodrigues@inpe.br>
+   !! **Date**:  15Agosto2022 07:59
+   !!
+   !! **Full description**:
+   !! Convert hours/minutes/seconds since from 1900 to dateTime
+   !!
+   !! @endnote
+   !!
+   !! @warning
+   !!
+   !!  [](https://www.gnu.org/graphics/gplv3-127x51.png'')
+   !!
+   !!     Under the terms of the GNU General Public version 3
+   !!
+   !! @endwarning
+
+   implicit none
+   !Parameters:
+   character(len=*), parameter :: procedureName = 'seconds2DateTime' ! Nome da função
+
+   !Variables (input):
+   real(kind=kind_rb), intent(in) :: seconds
+   !! Seconds to convert
+
+   !Local variables:
+   type(t_dt) :: dtOut
+   !! The date converted
+   real(kind=kind_rb) :: s1
+   real(kind=kind_rb) :: ms
+
+   integer :: ny
+   integer :: nyr
+   integer :: ileap
+   integer :: nm
+   integer :: ihr
+   integer :: imn
+   integer :: isc
+   integer :: msc
+
+   !Code:
+   s1 = dble(seconds)
+   do ny = 0,10000
+      ileap = 0
+      if(mod(1900+ny,4) == 0) ileap=1
+      s1 = s1-(365.+ileap)*86400.
+      if(s1 < 0.) then
+         nyr = ny
+         s1 = s1+(365.+ileap)*86400.
+         exit
+      endif
+   enddo
+   dtOut%year = 1900+nyr
+
+   ! s1 is now number of secs into the year
+   !   Get month
+
+   do nm = 1,12
+      ileap = 0
+      if(mod(1900+ny,4) == 0 .and. nm == 2) ileap=1
+      s1 = s1-(daysByMonth(nm)+ileap)*86400.
+      if(s1 < 0.) then
+         s1 = s1+(daysByMonth(nm)+ileap)*86400.
+         exit
+      endif
+   enddo
+   dtOut%month = nm
+
+   ! s1 is now number of secs into the month
+   !   Get date and time
+
+   dtOut%day = int(s1/86400.)
+   s1 = s1-dtOut%day*86400.
+   dtOut%day = dtOut%day+1 ! Since date starts at 1
+
+   ihr = int(s1/3600.)
+   s1 = s1-ihr*3600.
+   imn = int(s1/60.)
+   s1 = s1-imn*60.
+   isc = s1
+   ms = s1-isc
+   msc = int(ms*1000)
+   dtOut%hour = ihr !*10000+imn*100+isc
+   dtOut%minute = imn
+   dtOut%second = isc
+   dtOut%milisecond = msc
+   dtOut%timezone = 0
+   dtOut%zone="+0000"
+end function seconds2DateTime
+
+function incDateTime(dtIn,miliseconds,seconds,minutes,hours,days) result(dtOut)
+   !! Incrementa um dateTime em um valor dado
+   !!
+   !! @note
+   !!
+   !! **Project**: fortran-utilities
+   !! **Author(s)**: Rodrigues, L.F. [LFR]
+   !! **e-mail**: <mailto:luiz.rodrigues@inpe.br>
+   !! **Date**:  15Agosto2022 11:37
+   !!
+   !! **Full description**:
+   !! Incrementa um dateTime em um valor dado
+   !!
+   !! @endnote
+   !!
+   !! @warning
+   !!
+   !!  [](https://www.gnu.org/graphics/gplv3-127x51.png'')
+   !!
+   !!     Under the terms of the GNU General Public version 3
+   !!
+   !! @endwarning
+
+   implicit none
+   !Parameters:
+   character(len=*), parameter :: procedureName = 'incDateTime' ! Nome da função
+
+   !Variables (input):
+   type(t_dt) :: dtIn
+   !! Data a ser usada no incremento
+   real(kind=kind_rb), intent(in), optional :: miliseconds
+   !! Incremento em milisegundos
+   real(kind=kind_rb), intent(in), optional :: seconds
+   !! Incremento em segundos
+   real(kind=kind_rb), intent(in), optional :: minutes
+   !! Incremento em minutos
+   real(kind=kind_rb), intent(in), optional :: hours
+   !! Incremento em horas 
+   real(kind=kind_rb), intent(in), optional :: days
+   !! Incremento em dias    
+
+   !Local variables:
+   type(t_dt) :: dtOut
+   !! DateTime incrementado
+   real(kind=kind_rb) :: sec
+
+   !Code:
+   sec = 0.
+   if(present(miliseconds)) sec = miliseconds/1000.
+   if(present(seconds)) sec = sec+seconds
+   if(present(minutes)) sec = sec+(minutes*60.)
+   if(present(hours)) sec = sec+(hours*3600.)
+   if(present(days)) sec = sec+(days*86400.)
+
+   if(dtIn%year<1900) iErrNumber=dumpMessage(c_tty,c_yes,"","",c_fatal &
+   ," Year must be greater than 1900 :"//date2String(dtIn))
+
+   dtOut = seconds2DateTime(date2Seconds(dtIn,1900)+sec)
+
+end function incDateTime
+
+function dayOfWeek(dtIn) result(dowNumber)
+   !! Retorna o dia da semana de uma data. 1 = domingo
+   !!
+   !! @note
+   !!
+   !! **Project**: fortran-utilities
+   !! **Author(s)**: Rodrigues, L.F. [LFR]
+   !! **e-mail**: <mailto:luiz.rodrigues@inpe.br>
+   !! **Date**:  15Agosto2022 13:54
+   !!
+   !! **Full description**:
+   !! Retorna o dia da semana de uma data. 1 = domingo
+   !! Baseado no código diosponível em https://www.rosettacode.org/wiki/Day_of_the_week#Fortran
+   !!
+   !! @endnote
+   !!
+   !! @warning
+   !!
+   !!  [](https://www.gnu.org/graphics/gplv3-127x51.png'')
+   !!
+   !!     Under the terms of the GNU General Public version 3
+   !!
+   !! @endwarning
+
+   implicit none
+   !Parameters:
+   character(len=*), parameter :: procedureName = 'dayOfWeek' ! Nome da função
+
+   !Variables (input):
+   type(t_dt) :: dtIn
+   
+
+   !Local variables:
+   integer :: dowNumber
+   !! The day of week
+
+   !Code:
+   integer :: mm
+   integer :: yy
+   integer :: j
+   integer :: k
+
+   mm = dtIn%month
+   yy = dtIn%year
+   if(mm <= 2) then
+      mm = mm+12
+      yy = yy-1
+   endif
+   j = yy / 100
+   k = MOD(yy, 100)
+   dowNumber = MOD(dtIn%day + ((mm+1)*26)/10 + k + k/4 + j/4 + 5*j, 7)
+
+end function dayOfWeek
 
 end module modDateTime
