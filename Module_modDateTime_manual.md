@@ -31,6 +31,17 @@ Esse manual descreve tipos e funções pertencentes ao módulo modDateTime que a
   !! O dia em dias julianos (1 a 365/366)
 ```
 
+O acesso aos membros da estrutura deve ser feito pelo padrão Fortran. Uma variável pode ser definida por essa tipo e acessado conforme exemplo abaixo.
+
+```fortran
+use modDateTime, only: t_dt
+type(t_dt) :: novaData
+novaData%year = 2022
+novaData%month = 08
+novaData%day = 10
+print *, novaData%Year, novaData%month, novaData%day
+```
+
 ## Funções:
 
 ### 1. date2Seconds(dtIn,baseYear)
