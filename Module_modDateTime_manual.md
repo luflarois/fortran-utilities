@@ -140,7 +140,7 @@ print *, dayOfWeek(agora) !imprime um valor de 1 a 7 (depende do dia)
 
 ---
 
-### 5. incDateTime(dtin)
+### 5. incDateTime(dtin,miliseconds,seconds,minutes,hours,days)
 
 ##### Descrição:
 
@@ -176,7 +176,7 @@ print *,'Agora+800+2min=',incDateTime(agora,seconds=dble(800.),minutes=dble(2.))
 
 ---
 
-##### 6. int2DateTime(Year,Month,Day,Hour,Minute,Second,Milisecond,TZ)
+### 6. int2DateTime(Year,Month,Day,Hour,Minute,Second,Milisecond,TZ)
 
 ##### Descrição:
 
@@ -216,7 +216,7 @@ print *, stemp !Imprime a data 2200-03-01T13:00:34.000-0300
 
 ---
 
-##### 7. isLeapYear(year)
+### 7. isLeapYear(year)
 
 ##### Descrição:
 
