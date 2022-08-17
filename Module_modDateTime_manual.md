@@ -31,7 +31,7 @@ Esse manual descreve tipos e funções pertencentes ao módulo modDateTime que a
   !! O dia em dias julianos (1 a 365/366)
 ```
 
-O acesso aos membros da estrutura deve ser feito pelo padrão Fortran. Uma variável pode ser definida por essa tipo e acessado conforme exemplo abaixo.
+O acesso aos membros da estrutura deve ser feito pelo padrão Fortran. Uma variável pode ser definida por esse tipo e acessado conforme exemplo abaixo.
 
 ```fortran
 use modDateTime, only: t_dt
