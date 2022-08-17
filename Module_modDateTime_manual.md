@@ -14,7 +14,7 @@ Esse manual descreve tipos e funções pertencentes ao módulo modDateTime que a
   integer :: month
   !! Mê de 1 a 12 - 1=Janeiro 
   integer :: day
-  !! Dia do mês (1 a 28,29,30 ou 31 dias sengundo o mês/ano)
+  !! Dia do mês (1 a 28,29,30 ou 31 dias segundo o mês/ano)
   integer :: hour
   !! Hora do dia de 0 a 23
   integer :: minute
