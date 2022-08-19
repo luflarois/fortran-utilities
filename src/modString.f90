@@ -115,7 +115,7 @@ contains
    
    end function parseLine
 
-   function string2Int(IInt) result(intVal)
+   function string2Int(iInt) result(intVal)
       !! Retorna um inteiro a partir de um string
       !!
       !! @note
@@ -167,7 +167,6 @@ contains
       !!
       !! **Full description**:
       !! Converte um número de string para real.
-      !! O número não pode estar em notação científica.
       !!
       !! @endnote
       !!
