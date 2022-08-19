@@ -80,6 +80,7 @@ module modDateTime
    private
    public :: t_dt, now, date2String, int2DateTime, date2Seconds, string2DateTime, monthName
    public :: dayExist, isLeapYear, seconds2DateTime, incDateTime, weekName, dayOfWeek
+   public :: date2GradsTime
 
 contains
 
@@ -903,5 +904,45 @@ function dayOfWeek(dtIn) result(dowNumber)
    dowNumber = MOD(dtIn%day + ((mm+1)*26)/10 + k + k/4 + j/4 + 5*j, 7)
 
 end function dayOfWeek
+
+function date2GradsTime(dtIn) result(gDT)
+   !! Converte um dateTime para o formato Grads
+   !!
+   !! @note
+   !!
+   !! **Project**: fortran-utilities
+   !! **Author(s)**: Rodrigues, L.F. [LFR]
+   !! **e-mail**: <mailto:luiz.rodrigues@inpe.br>
+   !! **Date**:  17Agosto2022 13:16
+   !!
+   !! **Full description**:
+   !! Converte um dateTime para o formato Grads
+   !!
+   !! @endnote
+   !!
+   !! @warning
+   !!
+   !!  [](https://www.gnu.org/graphics/gplv3-127x51.png'')
+   !!
+   !!     Under the terms of the GNU General Public version 3
+   !!
+   !! @endwarning
+
+   implicit none
+   !Parameters:
+   character(len=*), parameter :: procedureName = 'date2GradsTime' ! Nome da função
+
+   !Variables (input):
+   type(t_dt) :: dtIn
+
+   !Local variables:
+   character(len=15) :: gDT
+   !! Saída em formato grads: 01:00z01dec2020
+
+   !Code:
+   write(gDT,fmt='(I2.2,":",I2.2,"z",I2.2,A3,I4.4)') dtIn%hour,dtIn%minute,dtIn%day &
+      ,monthName(dtIn%month),dtIn%year
+
+end function date2GradsTime
 
 end module modDateTime
