@@ -1,4 +1,8 @@
-# Module modDateTime
+# Manual do Módulo modDateTime
+
+## Introdução:
+
+Esse manual descreve tipos e funções pertencentes ao módulo modDateTime que agrupa funções específicas para uso em programas fortran. Faz parte de um esforço para manter bibliotecas importantes e agrupadas para uso em programação Fortran.
 
 ## Tipos:
 
@@ -10,7 +14,7 @@
   integer :: month
   !! Mê de 1 a 12 - 1=Janeiro 
   integer :: day
-  !! Dia do mês (1 a 28,29,30 ou 31 dias sengundo o mês/ano)
+  !! Dia do mês (1 a 28,29,30 ou 31 dias segundo o mês/ano)
   integer :: hour
   !! Hora do dia de 0 a 23
   integer :: minute
@@ -25,6 +29,17 @@
   !! Fuso no formato texto de "-1200" até "+1200"
   integer :: julDay
   !! O dia em dias julianos (1 a 365/366)
+```
+
+O acesso aos membros da estrutura deve ser feito pelo padrão Fortran. Uma variável pode ser definida por esse tipo e acessado conforme exemplo abaixo.
+
+```fortran
+use modDateTime, only: t_dt
+type(t_dt) :: novaData
+novaData%year = 2022
+novaData%month = 08
+novaData%day = 10
+print *, novaData%Year, novaData%month, novaData%day
 ```
 
 ## Funções:
@@ -136,7 +151,7 @@ print *, dayOfWeek(agora) !imprime um valor de 1 a 7 (depende do dia)
 
 ---
 
-### 5. incDateTime(dtin)
+### 5. incDateTime(dtin,miliseconds,seconds,minutes,hours,days)
 
 ##### Descrição:
 
@@ -172,7 +187,7 @@ print *,'Agora+800+2min=',incDateTime(agora,seconds=dble(800.),minutes=dble(2.))
 
 ---
 
-##### 6. int2DateTime(Year,Month,Day,Hour,Minute,Second,Milisecond,TZ)
+### 6. int2DateTime(Year,Month,Day,Hour,Minute,Second,Milisecond,TZ)
 
 ##### Descrição:
 
@@ -212,7 +227,7 @@ print *, stemp !Imprime a data 2200-03-01T13:00:34.000-0300
 
 ---
 
-##### 7. isLeapYear(year)
+### 7. isLeapYear(year)
 
 ##### Descrição:
 
